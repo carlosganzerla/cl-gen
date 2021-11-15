@@ -2,7 +2,7 @@
 
 This project (attempts to) implements generators (like Javascript
 [generators](https://javascript.plainenglish.io/javascript-lazy-evaluation-generators-examples-included-f9eaa517f969))
-in CL. Currently, this project is experimental.
+in CL. Currently this project is experimental.
 
 ## Usage
 
@@ -64,7 +64,7 @@ Generators can be nested also:
 ```
 
 In this case, we created an new generator `even-numbers` which consumes from
-`numbers`, which in turn is consumed by the last block.
+`numbers`. The last block consumes from the former, printing only even numbers.
 
 ## Todo
 
