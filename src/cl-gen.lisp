@@ -1,3 +1,9 @@
+(in-package #:cl-gen)
+
+(defmacro with-gensyms (syms &body body)
+  `(let (,@(mapcar (lambda (s) `(,s (gensym))) syms))
+     ,@body))
+
 (defun out-of-context-error ()
   (error "Cannot call yield or stop outside of a generator context"))
 
@@ -7,8 +13,8 @@
 
 (defvar *restarts* nil)
 
-(defmacro stop (&optional x)
-  `(funcall *stop* ,x))
+(defun stop (&optional x)
+  (funcall *stop* x))
 
 (defmacro stop-when (test-from &body body)
   (with-gensyms (body-eval)
@@ -22,15 +28,13 @@
        (let ((,body-eval (progn ,@body)))
          (stop ,body-eval)))))
 
-(defmacro yield (form)
-  (with-gensyms (value)
-    `(let ((,value ,form))
-       (if (car *restarts*)
-           (invoke-restart (car *restarts*) ,value (cdr *restarts*))
-           (out-of-context-error))
-       ,value)))
+(defun yield (value)
+  (if (car *restarts*)
+      (invoke-restart (car *restarts*) value (cdr *restarts*))
+      (out-of-context-error))
+  value)
 
-(defmacro generator-consume ((binding generator-form) &body body) 
+(defmacro generator-bind ((binding generator-form) &body body) 
   (with-gensyms (block restart)
     `(block ,block
             (restart-bind 

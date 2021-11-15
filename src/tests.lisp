@@ -1,0 +1,37 @@
+(defpackage #:tmp (:use #:cl #:cl-gen))
+(in-package #:tmp)
+
+(defun js-test ()
+  (yield 1)
+  (yield 2)
+  (yield 3)
+  (print "shouldnt call me!")
+  (yield 4)
+  (yield 5))
+
+(generator-bind (x (js-test))
+  (stop-when () x))
+
+(defun numbers ()
+  (do ((x 0 (1+ x))) 
+      (nil)
+      (yield x)))
+
+(defun even-numbers ()
+  (generator-bind (x (numbers))
+    (when (evenp x)
+      (yield x))))
+(defun some-mapping (lst)
+  (mapcar #'yield lst))
+
+(generator-bind (e (some-mapping '(1 2 3 4 5)))
+  (print e)
+  (stop-when (<= 3 e) e))
+(generator-bind (x (even-numbers))
+    (print x)
+    (stop-when (>= x 100) 'ok))
+
+(generator-bind (x (numbers))
+  (format t "Yielded ~A~%" x)
+  (when (= 100 x)
+    (stop 'stahp)))
