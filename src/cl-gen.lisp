@@ -11,10 +11,17 @@
                  (declare (ignore x))
                  (out-of-context-error)))
 
+(defvar *next* (lambda (&optional x) 
+                 (declare (ignore x))
+                 (out-of-context-error)))
+
 (defvar *restarts* nil)
 
 (defun stop (&optional x)
   (funcall *stop* x))
+
+(defun next (&optional x)
+  (funcall *next* x))
 
 (defmacro stop-when (test-from &body body)
   (with-gensyms (body-eval)
@@ -31,15 +38,26 @@
 (defun yield (value)
   (if (car *restarts*)
       (invoke-restart (car *restarts*) value (cdr *restarts*))
-      (out-of-context-error))
-  value)
+      (out-of-context-error)))
 
 (defmacro generator-bind ((binding generator-form) &body body) 
-  (with-gensyms (block restart)
-    `(block ,block
+  (with-gensyms (whole-block restart lambda-block)
+    `(block ,whole-block
             (restart-bind 
               ((,restart (lambda (,binding *restarts*)
-                           (let ((*stop* (lambda (x) (return-from ,block x))))
-                             ,@body))))
+                           (block
+                             ,lambda-block
+                             (let ((*stop* (lambda (x) 
+                                             (return-from ,whole-block x)))
+                                   (*next* (lambda (x)
+                                             (return-from ,lambda-block x)))) 
+                               ,@body)))))
               (let ((*restarts* (cons ',restart *restarts*))) 
                 ,generator-form)))))
+
+(defmacro generator-collect ((binding generator-form) &body body)
+  (with-gensyms (lst)
+    `(let (,lst)
+       (generator-bind (,binding ,generator-form)
+         (push (progn ,@body) ,lst))
+       (nreverse ,lst))))
