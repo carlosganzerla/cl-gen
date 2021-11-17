@@ -1,8 +1,8 @@
 # Common Lisp Generators
 
-The `cl-gen` is a project that intends to implement generators similar to
-(Javascript
-[generators](https://javascript.plainenglish.io/javascript-lazy-evaluation-generators-examples-included-f9eaa517f969))
+The `cl-gen` project is a lib that intends to implement generators similar to
+Javascript
+[generators](https://javascript.plainenglish.io/javascript-lazy-evaluation-generators-examples-included-f9eaa517f969)
 in CL. Currently this project is experimental.
 
 ## Usage
