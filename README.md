@@ -69,7 +69,7 @@ Generators can be nested also:
 ```
 
 In this case, we created an new generator `even-numbers` which consumes from
-`numbers`, which in turn is consumed by the last block.
+`numbers`. The last block consumes from the former, printing only even numbers.
 
 An iteration must be skipped explicitly. Also, the results of an iteration
 may be collected automatically (unless the iteration is skipped):
