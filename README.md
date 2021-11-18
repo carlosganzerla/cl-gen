@@ -7,6 +7,11 @@ in CL. Currently this project is experimental.
 
 ## Usage
 
+**It's possible that this doc is outdated because this is an early stage
+project. I suggest that you look into it just to get the idea. If you want
+better documentation, see the [examples file](examples.lisp). Proper
+documentation and tests will be done some time**
+
 The idea of generators is basically (although not limited to) to create lazy
 sequences (like `IEnumerable`/`Seq` in .NET). To do that there are basically
 three building blocks: The `yield`, `next` and `stop` functions. The
@@ -28,7 +33,7 @@ Let's see an example:
       (nil)
       (yield x)))
 
-(generator-bind (x (numbers))
+(generator-bind (x) ((numbers))
   (format t "Yielded ~A~%" x)
   (when (= 100 x)
     (stop 'stahp)))
@@ -51,11 +56,11 @@ Generators can be nested also:
 
 ```lisp
 (defun even-numbers ()
-  (generator-bind (x (numbers))
+  (generator-bind (x) ((numbers))
     (when (evenp x)
       (yield x))))
 
-(generator-bind (x (even-numbers))
+(generator-bind (x) ((even-numbers))
     (print x)
     (stop-when (>= x 100) 'ok))
 ```
@@ -83,7 +88,7 @@ may be collected automatically (unless the iteration is skipped):
           tree))
 
 (defun find-tree (pred tree)
-  (generator-collect (e (tree-generator tree))
+  (generator-collect (e) (tree-generator tree)
     (if (funcall pred e)
         e
         (next))))
