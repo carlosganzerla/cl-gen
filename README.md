@@ -9,7 +9,7 @@ in CL. Currently this project is experimental.
 
 **It's possible that this doc is outdated because this is an early stage
 project. I suggest that you look into it just to get the idea. If you want
-better documentation, see the [examples file](examples.lisp). Proper
+better documentation, see the [examples file](src/examples.lisp). Proper
 documentation and tests will be done some time**
 
 The idea of generators is basically (although not limited to) to create lazy
