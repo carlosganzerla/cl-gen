@@ -1,40 +1,23 @@
 (in-package #:cl-gen)
 
-(defmacro with-gensyms (syms &body body)
-  `(let (,@(mapcar (lambda (s) `(,s (gensym))) syms))
-     ,@body))
-
-(defun mklist (obj)
-  (if (consp obj)
-      obj
-      (list obj)))
+(defvar *restarts* nil)
 
 (defun out-of-context-error ()
   (error "Cannot call yield or stop outside of a generator context"))
 
-(defvar *stop* (list (lambda (&rest x)
-                       (declare (ignore x))
-                       (out-of-context-error))))
+(defmacro defcontext (name)
+  (let ((context (intern (concat "*" name "*"))))
+    `(progn
+       (defvar ,context (list (lambda (&rest x) 
+                                (declare (ignore x)) 
+                                (out-of-context-error))))   
+       (defun ,name (&rest args)
+         (apply (car ,context) args))
+       (defun ,(intern (concat name '-all)) (&rest args)
+         (apply (car (last ,context 2)) args)))))
 
-(defvar *next* (list (lambda (&rest x)
-                       (declare (ignore x))
-                       (out-of-context-error))))
-
-(defvar *restarts* nil)
-
-(defun stop (&rest x)
-  (apply (car *stop*) x))
-
-(defun stop-all (&rest x)
-  
-  )
-
-(defun next (&rest x)
-  (apply (car *next*) x))
-
-(defun next-all (&rest x)
- 
-  )
+(defcontext next)
+(defcontext stop)
 
 (defmacro stop-when (test-from &body body)
   (with-gensyms (body-eval)
@@ -53,16 +36,9 @@
       (apply #'invoke-restart (car *restarts*) (cdr *restarts*) values)
       (out-of-context-error)))
 
-(defmacro cons-let (bindings &body body)
-  `(let ,(mapcar (lambda (binding)
-                   `(,(car binding) (cons ,@(cdr binding) ,(car binding))))
-                 bindings)
-     ,@body))
-
-(defun make-return-lambda (block-name)
+(defun return-lambda (block-name)
   `(lambda (&rest x)
-     (return-from ,whole-block
-                  (apply #'values x))))
+     (return-from ,block-name (apply #'values x))))
 
 (defmacro generator-bind (bindings
                           (generator &optional (return-form 
@@ -71,19 +47,12 @@
   (with-gensyms (whole-block restart lambda-block)
     `(block ,whole-block
             (restart-bind
-              ((,restart (lambda (*restarts* ,@bindings)
-                           (block
-                             ,lambda-block
-                             (cons-let ((*stop*
-                                          (lambda (&rest x)
-                                            (return-from ,whole-block
-                                                         (apply #'values x))))
-
-                                        (*next*
-                                          (lambda (&rest x)
-                                            (return-from ,lambda-block
-                                                         (apply #'values x)))))
-                               ,@body)))))
+              ((,restart 
+                 (lambda (*restarts* ,@bindings)
+                   (block ,lambda-block
+                          (cons-let ((*stop* ,(return-lambda whole-block))
+                                     (*next* ,(return-lambda lambda-block)))
+                            ,@body)))))
               (cons-let ((*restarts* ',restart))
                 ,@(if return-form-supplied-p
                       `(,generator ,return-form)
