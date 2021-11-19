@@ -5,19 +5,19 @@
 (defun out-of-context-error ()
   (error "Cannot call yield or stop outside of a generator context"))
 
-(defmacro defcontext (name)
-  (let ((context (intern (concat "*" name "*"))))
-    `(progn
-       (defvar ,context (list (lambda (&rest x) 
-                                (declare (ignore x)) 
-                                (out-of-context-error))))   
-       (defun ,name (&rest args)
-         (apply (car ,context) args))
-       (defun ,(intern (concat name '-all)) (&rest args)
-         (apply (car (last ,context 2)) args)))))
+(defvar *next* (list (lambda (&rest x) 
+                       (declare (ignore x)) 
+                       (out-of-context-error))))
 
-(defcontext next)
-(defcontext stop)
+(defvar *stop* (list (lambda (&rest x) 
+                       (declare (ignore x)) 
+                       (out-of-context-error))))
+
+(defun stop (&rest args)
+  (apply (car *stop*) args))
+
+(defun next (&rest args)
+  (apply (car *next*) args))
 
 (defmacro stop-when (test-from &body body)
   (with-gensyms (body-eval)
