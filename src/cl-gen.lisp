@@ -12,21 +12,29 @@
 (defun out-of-context-error ()
   (error "Cannot call yield or stop outside of a generator context"))
 
-(defvar *stop* (lambda (&rest x)
-                 (declare (ignore x))
-                 (out-of-context-error)))
+(defvar *stop* (list (lambda (&rest x)
+                       (declare (ignore x))
+                       (out-of-context-error))))
 
-(defvar *next* (lambda (&rest x)
-                 (declare (ignore x))
-                 (out-of-context-error)))
+(defvar *next* (list (lambda (&rest x)
+                       (declare (ignore x))
+                       (out-of-context-error))))
 
 (defvar *restarts* nil)
 
 (defun stop (&rest x)
-  (apply *stop* x))
+  (apply (car *stop*) x))
+
+(defun stop-all (&rest x)
+  
+  )
 
 (defun next (&rest x)
-  (apply *next* x))
+  (apply (car *next*) x))
+
+(defun next-all (&rest x)
+ 
+  )
 
 (defmacro stop-when (test-from &body body)
   (with-gensyms (body-eval)
@@ -45,9 +53,20 @@
       (apply #'invoke-restart (car *restarts*) (cdr *restarts*) values)
       (out-of-context-error)))
 
+(defmacro cons-let (bindings &body body)
+  `(let ,(mapcar (lambda (binding)
+                   `(,(car binding) (cons ,@(cdr binding) ,(car binding))))
+                 bindings)
+     ,@body))
+
+(defun make-return-lambda (block-name)
+  `(lambda (&rest x)
+     (return-from ,whole-block
+                  (apply #'values x))))
+
 (defmacro generator-bind (bindings
-                          (generator
-                            &optional (return-form nil return-form-supplied-p))
+                          (generator &optional (return-form 
+                                                 nil return-form-supplied-p))
                           &body body)
   (with-gensyms (whole-block restart lambda-block)
     `(block ,whole-block
@@ -55,16 +74,17 @@
               ((,restart (lambda (*restarts* ,@bindings)
                            (block
                              ,lambda-block
-                             (let ((*stop*
-                                     (lambda (&rest x)
-                                       (return-from ,whole-block
-                                                    (apply #'values x))))
-                                   (*next*
-                                     (lambda (&rest x)
-                                       (return-from ,lambda-block
-                                                    (apply #'values x)))))
+                             (cons-let ((*stop*
+                                          (lambda (&rest x)
+                                            (return-from ,whole-block
+                                                         (apply #'values x))))
+
+                                        (*next*
+                                          (lambda (&rest x)
+                                            (return-from ,lambda-block
+                                                         (apply #'values x)))))
                                ,@body)))))
-              (let ((*restarts* (cons ',restart *restarts*)))
+              (cons-let ((*restarts* ',restart))
                 ,@(if return-form-supplied-p
                       `(,generator ,return-form)
                       `(,generator)))))))
