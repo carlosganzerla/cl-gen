@@ -129,6 +129,6 @@
     (match-checker stream word)))
 
 (file-match-checker #p"src/cl-gen.lisp" "yield")
-(file-match-checker #p"src/examples.lisp" "albert einstein")
-(file-match-checker #p"src/examples.lisp" "marcus aurelius")
-(file-match-checker #p"src/string-finder.lisp" "i'm always found")
+(file-match-checker #p"src/package.lisp" "defpackage")
+(file-match-checker #p"src/package.lisp" "cl-jen")
+(file-match-checker #p"src/examples.lisp" "i'm always found")
