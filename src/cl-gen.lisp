@@ -5,12 +5,12 @@
 (defun out-of-context-error ()
   (error "Cannot call yield or stop outside of a generator context"))
 
-(defvar *next* (list (lambda (&rest x) 
-                       (declare (ignore x)) 
+(defvar *next* (list (lambda (&rest x)
+                       (declare (ignore x))
                        (out-of-context-error))))
 
-(defvar *stop* (list (lambda (&rest x) 
-                       (declare (ignore x)) 
+(defvar *stop* (list (lambda (&rest x)
+                       (declare (ignore x))
                        (out-of-context-error))))
 
 (defun stop (&rest args)
@@ -41,13 +41,13 @@
      (return-from ,block-name (apply #'values x))))
 
 (defmacro generator-bind (bindings
-                          (generator &optional (return-form 
+                          (generator &optional (return-form
                                                  nil return-form-supplied-p))
                           &body body)
   (with-gensyms (whole-block restart lambda-block)
     `(block ,whole-block
             (restart-bind
-              ((,restart 
+              ((,restart
                  (lambda (*restarts* ,@bindings)
                    (block ,lambda-block
                           (cons-let ((*stop* ,(return-lambda whole-block))
