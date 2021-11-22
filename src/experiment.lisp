@@ -2,16 +2,19 @@
 
 (defstruct generator call)
 
-(defun next (gen)
-  (when (generator-call gen)
-    (let ((next (funcall generator-call gen)))
-       (setf (generator-call gen) next)
-       
-       )))
+(defun next (gen &rest values)
+  (when (and gen (generator-call gen))
+    (let ((next (apply (generator-call gen) values)))
+      (when (functionp next)
+        (return-from next (values (setf (generator-call gen) next) t)))))
+  (values nil nil))
 
-(defmacro continuation-bind (calls bindings &body body)
-  (let ((f `(lambda ,bindings ,@body))) 
-    `(progn (push ,f ,calls) ,f)))
+
+(defun generator-section (bindings &body body)
+  `(lambda ,bindings
+     ()
+     )
+  )
 
 (defmacro defun* (name params &body body)
   `(defun ,name ,params
@@ -26,9 +29,14 @@
 
 (defun* g ()
   (print 4)
+  (print 1)
+  (print 1)
   (cont 4)
   (print 2)
-  (cont 2))
+  (print 4)
+  (cont 2)
+  (print 6)
+  (print 7))
 
 (defun* a ()
   (print 1)
@@ -42,5 +50,3 @@
   (next g)
   (next g)
   (next g))
-
-(continuation-bind x (a b c) (print a))
