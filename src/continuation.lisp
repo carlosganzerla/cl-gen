@@ -1,5 +1,7 @@
 (in-package #:cl-gen)
 
+(defstruct generator cont)
+
 (defvar *continuation* (list #'identity))
 (defvar *stop* (list #'identity))
 
@@ -9,12 +11,11 @@
 (defun return-cont (&rest args)
   (apply (car *stop*) args))
 
-(defun continuation (&rest args)
-  (apply (car *continuation*) (cdr *continuation*) args))
+(defun next (&rest args)
+  (apply *next* args))
 
-(defmacro clambda (bindings &body body)
-  `(lambda (*continuation* ,@bindings)
-     ,@body))
+(defun continuation (&rest args)
+  (apply (car *continuation*) args))
 
 (defmacro defuncont (name args &body body)
   (let ((f (intern (concat "%" name))))
@@ -30,27 +31,52 @@
 (defmacro continuation-bind (bindings form &body body)
   (with-gensyms (block)
     `(cons-let ((*continuation* 
-                  (clambda ,bindings 
+                  (lambda ,bindings 
                     (block ,block 
                            (cons-let ((*stop* ,(return-lambda block)))
                              ,@body)))))
        ,form)))
 
 
+
+(defmacro later-bind (bindings &body body)
+  `(continuation-bind ,bindings (car *continuation*)
+     ,@body))
+
+(defmacro defun* (name bindings &body body)
+  (with-gensyms (next-fn)
+    `(progn 
+      (defun ,name ,bindings
+        (let* ((,next-fn (lambda (&rest args)
+                           (if (functionp ,next-fn)
+                               (let ((result (next args)))
+                                 (setf ,next-fn result)
+                                 (values result t))
+                               
+               (*next* ,next-fn))
+          (lambda () ,@body)))))))))
+
+
 (defun printy (x)
-  (progn (format t "Printy ~A~%" x) x))
+  (progn (format t "Printy ~A~%" x) (continuation x)))
 
 (defun prinky (x)
-  (progn (format t "Prinky ~A~%" x) x))
+  (progn (format t "Prinky ~A~%" x) (continuation x)))
 
 (defun prinpy (x)
-  (progn (format t "Prinpy ~A~%" x) x))
+  (progn (format t "Prinpy ~A~%" x) (continuation x)))
 
-(defuncont baz (n)
-  (continuation-bind (x) (printy n)
-    (continuation-bind (y) (prinky (1+ n))
-      (continuation-bind (z) (prinpy (1- n))
-        (stop (car *continuation*))
-        (format t "albierto tien ~A ~A ~A garrafitas~%" x y z))
-      (format t "vienna")
-      (stop 22))))
+(defuncont baz ()
+  (continuation-bind (x) (car *continuation*)
+    (continuation-bind (y) (car *continuation*)
+      (continuation-bind (z) (car *continuation*)
+        (format t "albierto tien ~A ~A ~A garrafitas~%" x y z)))))
+
+(defun lulz ()
+  (do ((x 0 (1+ x))
+       (fn (baz) (funcall fn x)))
+      ((not (functionp fn)) fn)
+      (when (> x 0) (return fn))))
+
+(defun* bar ()
+  (print "oi"))
