@@ -1,9 +1,8 @@
 (in-package #:cl-gen)
 
-(defstruct generator cont)
-
-(defvar *continuation* (list #'identity))
-(defvar *stop* (list #'identity))
+(setf *continuation* #'identity)
+(setf *stop* (list #'identity))
+(setf *next* nil)
 
 (defun stop (&rest args)
   (apply (car (last *stop* 2)) args))
@@ -12,10 +11,14 @@
   (apply (car *stop*) args))
 
 (defun next (&rest args)
-  (apply *next* args))
+  (if (functionp *next*)
+      (multiple-value-bind (next result) (apply *next* args)
+        (setf *next* next)
+        (values result t))
+      (values nil nil)))
 
 (defun continuation (&rest args)
-  (apply (car *continuation*) args))
+  (apply *continuation* args))
 
 (defmacro defuncont (name args &body body)
   (let ((f (intern (concat "%" name))))
@@ -30,31 +33,23 @@
 
 (defmacro continuation-bind (bindings form &body body)
   (with-gensyms (block)
-    `(cons-let ((*continuation* 
-                  (lambda ,bindings 
-                    (block ,block 
-                           (cons-let ((*stop* ,(return-lambda block)))
-                             ,@body)))))
+    `(let ((*continuation* (lambda ,bindings 
+                             (block ,block 
+                                    (cons-let ((*stop* ,(return-lambda block)))
+                                      ,@body)))))
        ,form)))
 
-
-
-(defmacro later-bind (bindings &body body)
-  `(continuation-bind ,bindings (car *continuation*)
-     ,@body))
+(defmacro yield-bind (bindings form &body body)
+  `(continuation-bind ,bindings *continuation*
+     (values (progn ,@body) ,form)))
 
 (defmacro defun* (name bindings &body body)
-  (with-gensyms (next-fn)
-    `(progn 
-      (defun ,name ,bindings
-        (let* ((,next-fn (lambda (&rest args)
-                           (if (functionp ,next-fn)
-                               (let ((result (next args)))
-                                 (setf ,next-fn result)
-                                 (values result t))
-                               
-               (*next* ,next-fn))
-          (lambda () ,@body)))))))))
+  `(defun ,name ,bindings
+     (continuation-bind () () ,@body)))
+
+(defmacro generator-context (form &body body)
+  `(let ((*next* ,form))
+     ,@body))
 
 
 (defun printy (x)
@@ -66,17 +61,31 @@
 (defun prinpy (x)
   (progn (format t "Prinpy ~A~%" x) (continuation x)))
 
-(defuncont baz ()
-  (continuation-bind (x) (car *continuation*)
-    (continuation-bind (y) (car *continuation*)
-      (continuation-bind (z) (car *continuation*)
+(defun* baz ()
+  (yield-bind (x) (print "evaled x")
+    (yield-bind (y) (print "evaled y")
+      (yield-bind (z) (print "evaled z")
         (format t "albierto tien ~A ~A ~A garrafitas~%" x y z)))))
 
+
 (defun lulz ()
-  (do ((x 0 (1+ x))
-       (fn (baz) (funcall fn x)))
-      ((not (functionp fn)) fn)
-      (when (> x 0) (return fn))))
+  (generator-context (baz)
+    (next)
+    (next 2)))
+
+(defuncont bazzie (n)
+  (continuation-bind (x) (printy n)
+    (print "evaled x")
+    (continuation-bind (y) (prinky (1+ n))
+      (print "evaled y")
+      (continuation-bind (z) (prinpy (1- n))
+        (print "evaled z")
+        (format t "albierto tien ~A ~A ~A garrafitas~%" x y z)))))
 
 (defun* bar ()
   (print "oi"))
+
+(setf pau "cu")
+
+(funcall (let ((pau 3))
+           (lambda () (incf pau 4))))
