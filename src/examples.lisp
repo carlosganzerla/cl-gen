@@ -1,34 +1,89 @@
 (in-package #:cl-gen)
 
-(defun printy (x)
-  (progn (format t "Printy ~A~%" x) (continuation x)))
+(defuncont printy (x)
+  (progn (format t "Printy ~A~%" x) (cc x)))
 
-(defun prinky (x)
-  (progn (format t "Prinky ~A~%" x) (continuation x)))
+(defuncont prinky (x)
+  (progn (format t "Prinky ~A~%" x) (cc x)))
 
-(defun prinpy (x)
-  (progn (format t "Prinpy ~A~%" x) (continuation x)))
+(defuncont prinpy (x)
+  (progn (format t "Prinpy ~A~%" x) (cc x)))
 
-(defun* baz ()
-  (yield-bind (x) (print "evaled x")
-    (yield-bind (y) (print "evaled y")
-      (yield-bind (z) (print "evaled z")
-        (format t "albierto tien ~A ~A ~A garrafitas~%" x y z)))))
-
-
-(defun lulz ()
-  (generator-context (baz)
-    (next)
-    (next 2)))
 
 (defuncont bazzie (n)
-  (continuation-bind (x) (printy n)
+  (cc-bind (x) (progn (print $cc) (cc 3))
     (print "evaled x")
-    (continuation-bind (y) (prinky (1+ n))
+    (cc-bind (y) (prinky (1+ n))
       (print "evaled y")
-      (continuation-bind (z) (prinpy (1- n))
+      (cc-bind (z) (prinpy (1- n))
         (print "evaled z")
-        (format t "albierto tien ~A ~A ~A garrafitas~%" x y z)))))
+        (format t "albierto tien ~A ~A ~A garrafitas~%" x y z))
+      (cc 5))))
 
-(defun* bar ()
-  (print "oi"))
+(defuncont c ()
+  (cc-bind (x) (bazzie 5)
+    (print 'eae)
+    (print "evaled x")
+    x))
+
+(with-cc-context (c))
+
+(defuncont boris ()
+  (cc-bind (x) $cc
+    (format t "evaled x ~A~%" x)
+    (cc-bind (y) $cc
+      (format t "evaled y ~A~%" y)
+      (stop 33)
+      (cc-bind (z) $cc
+        (format t "evaled z ~A~%" z)
+        (print $cc)
+        (format t "gameover son~%")))))
+
+(with-cc-context (boris))
+
+(defun* boris2 ()
+  (yield-bind (format t "Give me a numbah!~%") (x)
+    (yield-bind (format t "evaled x ~A~%" x) (y) 
+      (yield-bind (format t "evaled y ~A~%" y) (z) 
+        (format t "evaled z ~A~%" z)))))
+
+(with-cc-context (boris2))
+
+(defuncont boris3 ()
+  (yield-bind (x) (format t "evaled x ~A~%" x)
+    (yield-bind (y) (format t "evaled y ~A~%" y) 
+      (format t "fku playboy"))))
+
+(with-cc-context (boris3))
+
+(defun dft (tree)
+  (cond ((null tree) nil)
+        ((atom tree) (princ tree))
+        (t (dft (car tree))
+         (dft (cdr tree)))))
+
+(setq *saved* nil)
+
+(defuncont dft-node (tree)
+  (cond ((null tree) (restartx))
+        ((atom tree) (cc tree))
+        (t (push (lambda () (dft-node (cdr tree)))
+                 *saved*)
+           (dft-node (car tree)))))
+
+(defuncont restartx ()
+  (if *saved*
+      (funcall (pop *saved*))
+      (cc 'done)))
+
+(defuncont dft2 (tree)
+  (setq *saved* nil)
+  (cc-bind (node) (dft-node tree)
+    (cond ((eq node 'done) (cc nil))
+          (t (princ node)
+           (restartx)))))
+
+(setq t1 '(a (b (d h)) (c e (f i) g))
+      t2 '(1 (2 (3 6 7) 4 5)))
+
+(with-cc-context (dft2 t1))

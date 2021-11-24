@@ -7,8 +7,8 @@
 (defmacro with-cc-context (&body body)
   (with-gensyms (block)
     `(block ,block
-            (let (($cc #'identity)
-                  ($stop ,(return-lambda block)))
+            (let (($cc #'identity) ($stop ,(return-lambda block)))
+              (declare (ignorable $stop $cc))
               ,@body))))
 
 (defuncont stop (&rest args)
@@ -36,43 +36,17 @@
        (declare (ignorable $cc))
        ,form)))
 
-(defuncont printy (x)
-  (progn (format t "Printy ~A~%" x) (cc x)))
+(defstruct generator (call nil :type function))
 
-(defuncont prinky (x)
-  (progn (format t "Prinky ~A~%" x) (cc x)))
+(defun next (gen &rest args)
+  (when (generator-p gen)
+    (with-slots (call) gen
+      (apply call args))))
 
-(defuncont prinpy (x)
-  (progn (format t "Prinpy ~A~%" x) (cc x)))
+(defmacro yield-bind (form bindings &body body)
+  `(cc-bind ,bindings (values (make-generator :call $cc) ,form)
+     ,@body))
 
-
-(defuncont bazzie (n)
-  (cc-bind (x) (progn (print $cc) (cc 3))
-    (print "evaled x")
-    (cc-bind (y) (prinky (1+ n))
-      (print "evaled y")
-      (cc-bind (z) (prinpy (1- n))
-        (print "evaled z")
-        (format t "albierto tien ~A ~A ~A garrafitas~%" x y z))
-      (cc 5))))
-
-(defuncont c ()
-  (cc-bind (x) (bazzie 5)
-    (print 'eae)
-    (print "evaled x")
-    x))
-
-(with-cc-context (c))
-
-(defuncont boris ()
-  (cc-bind (x) $cc
-    (format t "evaled x ~A~%" x)
-    (cc-bind (y) $cc
-      (format t "evaled y ~A~%" y)
-      (stop 33)
-      (cc-bind (z) $cc
-        (format t "evaled z ~A~%" z)
-        (print $cc)
-        (format t "gameover son~%")))))
-
-(with-cc-context (boris))
+(defmacro defun* (name bindings &body body)
+  `(defuncont ,name ,bindings
+     (yield-bind () () ,@body)))

@@ -1,8 +1,7 @@
-(setf *next* nil)
 (defun next (&rest args)
-  (if (functionp *next*)
-      (multiple-value-bind (next result) (apply *next* args)
-        (setf *next* next)
+  (if (functionp $next)
+      (multiple-value-bind (next result) (apply $next args)
+        (setf $next next)
         (values result t))
       (values nil nil)))
 
@@ -16,5 +15,5 @@
      (continuation-bind () () ,@body)))
 
 (defmacro generator-context (form &body body)
-  `(let ((*next* ,form))
+  `(let (($next ,form))
      ,@body))
