@@ -21,3 +21,8 @@
                                              (symbol-name arg)
                                              arg))
                                        args)))
+
+(defun clean-lambda-list (lambda-list)
+  (remove-if (lambda (param)
+               (and (symbolp param) (char= #\&(char (symbol-name param) 0))))
+             lambda-list))
