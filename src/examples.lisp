@@ -41,20 +41,6 @@
 
 (with-cc-context (boris))
 
-(defun* boris2 ()
-  (yield-bind (format t "Give me a numbah!~%") (x)
-    (yield-bind (format t "evaled x ~A~%" x) (y) 
-      (yield-bind (format t "evaled y ~A~%" y) (z) 
-        (format t "evaled z ~A~%" z)))))
-
-(with-cc-context (boris2))
-
-(defuncont boris3 ()
-  (yield-bind (x) (format t "evaled x ~A~%" x)
-    (yield-bind (y) (format t "evaled y ~A~%" y) 
-      (format t "fku playboy"))))
-
-(with-cc-context (boris3))
 
 (defun dft (tree)
   (cond ((null tree) nil)

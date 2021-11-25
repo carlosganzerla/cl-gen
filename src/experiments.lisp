@@ -1,0 +1,37 @@
+(in-package #:cl-gen)
+
+(defgen boris2 ()
+  (yield-bind (progn (format t "Give me a numbah!~%") 34) (x)
+    (yield-bind (format t "evaled x ~A~%" x) (y) 
+      (yield-bind (format t "evaled y ~A~%" y) (z) 
+        (format t "evaled z ~A~%" z)))))
+
+(cc-context (boris2))
+
+(defuncc izi ()
+  (next-bind (x g) ((boris2))
+    (format t "current: ~A~%" x)
+    (next-bind (y g) (g 3)
+      (format t "current: ~A~%" y))
+    33))
+
+(cc-context (izi))
+
+(defuncc boris-consume ()
+  (generator-context (boris2)
+    (next ()
+      (format t "current: ~A~%" current)
+      (next (3)
+        (format t "current: ~A~%" current)
+        (next (5)
+          (format t "current: ~A~%" current)
+          (next (6)
+            (format t "current: ~A~%" current)
+            (next (5555)
+              (format t "Shite shouldve happend")))) 
+        (next (1))
+        (next (5)
+          (format t "current: ~A~%" current)))
+      (format t "current: ~A~%" current))))
+
+(cc-context (boris-consume))
