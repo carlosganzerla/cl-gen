@@ -45,18 +45,21 @@
       (apply call args))))
 
 (defmacro yield-bind (form bindings &body body)
-  `(cc-bind ,bindings (values (make-generator :call $cc) ,form)
-     ,@body))
+  (with-gensyms (rest)
+    `(cc-bind (&optional ,@bindings &rest ,rest) 
+             (multiple-value-call #'values (make-generator :call $cc) ,form)
+             (declare (ignore ,rest))
+             ,@body)))
 
 (defmacro defgen (name bindings &body body)
   `(defuncc ,name ,bindings
      (yield-bind () () ,@body)))
 
-(defmacro next-bind ((var-bind gen-bind) (gen-form &rest values) 
+(defmacro next-bind ((gen-bind &rest var-binds) (gen-form &rest values) 
                      &body body)
-  `(multiple-value-bind (,gen-bind ,var-bind) (funcall #'%next 
-                                                       ,gen-form
-                                                       ,@values)
+  `(multiple-value-bind (,gen-bind ,@var-binds) (funcall #'%next 
+                                                         ,gen-form
+                                                         ,@values)
      ,@body))
 
 (defmacro generator-context (generator &body body)
@@ -64,7 +67,7 @@
      (declare (ignorable $generator))
      ,@body))
 
-(defmacro next ((&rest values) &body body)
-  `(next-bind (current $generator) ($generator ,@values)
+(defmacro next (values &body body)
+  `(next-bind ($generator current) ($generator ,@values)
      (declare (ignorable $generator current))
      ,@body))
