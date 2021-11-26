@@ -4,6 +4,13 @@
   `(let (,@(mapcar (lambda (s) `(,s (gensym))) syms))
      ,@body))
 
+(defmacro aif (test-form if-form &optional else-form)
+  `(let ((it ,test-form))
+    (if it ,if-form ,else-form)))
+
+(defmacro awhen (form &body body)
+  `(aif ,form ,@body))
+
 (defun mklist (obj)
   (if (consp obj)
       obj
@@ -21,8 +28,3 @@
                                              (symbol-name arg)
                                              arg))
                                        args)))
-
-(defun clean-lambda-list (lambda-list)
-  (remove-if (lambda (param)
-               (and (symbolp param) (char= #\&(char (symbol-name param) 0))))
-             lambda-list))

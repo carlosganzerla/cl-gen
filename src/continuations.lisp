@@ -1,5 +1,7 @@
 (in-package #:cl-gen)
 
+(defconstant +rest+ (gensym))
+
 (defun return-lambda (block-name)
   `(lambda (&rest x)
      (return-from ,block-name (apply #'values x))))
@@ -26,10 +28,10 @@
 (defuncc cc (&rest args)
   (apply $cc args))
 
-
 (defmacro cc-bind (bindings form &body body)
   (with-gensyms (block)
     `(let (($cc (lambda ,bindings 
+                  (declare (ignore ,+rest+))
                   (block ,block 
                          (let (($stop ,(return-lambda block)))
                            (declare (ignorable $stop))
@@ -44,22 +46,19 @@
     (with-slots (call) gen
       (apply call args))))
 
-(defmacro yield-bind (form bindings &body body)
-  (with-gensyms (rest)
-    `(cc-bind (&optional ,@bindings &rest ,rest) 
-             (multiple-value-call #'values (make-generator :call $cc) ,form)
-             (declare (ignore ,rest))
-             ,@body)))
+(defmacro yield-bind (bindings form &body body)
+  `(cc-bind (&optional ,@bindings &rest ,+rest+) 
+            (multiple-value-call #'values (make-generator :call $cc) ,form)
+            ,@body))
 
 (defmacro defgen (name bindings &body body)
   `(defuncc ,name ,bindings
      (yield-bind () () ,@body)))
 
-(defmacro next-bind ((gen-bind &rest var-binds) (gen-form &rest values) 
-                     &body body)
-  `(multiple-value-bind (,gen-bind ,@var-binds) (funcall #'%next 
-                                                         ,gen-form
-                                                         ,@values)
+(defmacro next-bind (var-binds (gen-binding &rest args) &body body)
+  `(multiple-value-bind (,gen-binding ,@var-binds) (funcall #'%next 
+                                                            ,gen-binding 
+                                                            ,@args)
      ,@body))
 
 (defmacro generator-context (generator &body body)
