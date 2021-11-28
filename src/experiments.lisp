@@ -3,8 +3,6 @@
 (defgen boris2 ()
   (print "a generata")
   (yield-bind (x) (progn (format t "Give me a numbah!~%") 34)
-    (stop 55)
-    (print $stop)
     (yield-bind (y) (values 420 (format t "evaled x ~A~%" x))
       (yield-bind (z) (format t "evaled y ~A~%" y)
         (format t "evaled z ~A~%" z)))))
@@ -23,41 +21,24 @@
 
 (cc-context (izi))
 
-(defuncc boris-consume ()
-  (generator-context (boris2)
-    (()
-     (format t "current: ~A~%" current)
-     (next (3)
-       (format t "current: ~A~%" current)
-       (next (5)
-         (format t "current: ~A~%" current)
-         (next (6)
-           (format t "current: ~A~%" current)
-           (next (5555)
-             (format t "Shite shouldve happend")))) 
-       (next (1))
-       (next (5)
-         (format t "current: ~A~%" current)))
-     (format t "current: ~A~%" current))))
-
-(cc-context (boris-consume))
-
 (defgen generatorzin ()
-  (yield-bind (x) (format t "2 + 2 = ") 
+  (format t "2 + 2 = ")
+  (yield-bind (x) ()
     (if (= x 4)
         (format t "~A~%" x)
         (format t "So dumb lmao~%"))
-    (yield-bind (x) (format t "3 * 3 = ") 
-      (if (= x 4)
+    (format t "3 * 3 = ")
+    (yield-bind (x) ()  
+      (if (= x 9)
           (format t "~A~%" x)
-          (format t "So dumb lmao~%"))
-      (format t "~A~%" x))))
+          (format t "So dumb lmao~%")))))
+
+(cc-context (generatorzin))
 
 (cc-context
-  (generator-context (generatorzin)
-    (next ()
-      (next ((read))
-        (next ((read)))))))
+  (let ((g (generatorzin)))
+    (next-bind () (g)
+      (next-bind () (g (read))))))
 
 (defgen generate-numbers ()
   (labels ((rec (x)
@@ -76,3 +57,24 @@
 (cc-context
   (cc-bind () (values $cc 3)
     (print "waddap")))
+
+(defgen numbers ()
+  (yield-bind () 1
+    (yield-bind () 2
+      (yield-bind () 3))))
+
+(cc-context 
+  (generator-bind (x) (numbers) 
+    (print x)))
+
+(cc-context 
+  (generator-bind () (boris2)))
+
+
+
+(defgen test ()
+  (generator-do ((x 0 (1+ x)))
+                ((>= x 5))
+                (print x)))
+
+(cc-context (test))

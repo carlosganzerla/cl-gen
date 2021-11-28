@@ -61,12 +61,20 @@
                                                             ,@args)
      ,@body))
 
-(defmacro generator-context (generator &body body)
-  `(let (($generator ,generator))
-     (declare (ignorable $generator))
-     ,@body))
+(defmacro generator-bind (var-binds gen-form &body body)
+  (with-gensyms (rec gen-bind)
+    `(labels ((,rec (,gen-bind)
+               (next-bind ,var-binds (,gen-bind ()) 
+                 (when ,gen-bind
+                   ,@body
+                   (,rec ,gen-bind)))))
+      (,rec ,gen-form))))
 
-(defmacro next (values &body body)
-  `(next-bind ($generator current) ($generator ,@values)
-     (declare (ignorable $generator current))
-     ,@body))
+(defmacro generator-do (varlist endlist &body body)
+  (with-gensyms (rec)
+    `(labels ((,rec ,(mapcar #'car varlist)
+                (if ,(car endlist)
+                    ,(cadr endlist)
+                    (yield-bind () (progn ,@body)
+                      (,rec ,@(mapcar #'caddr varlist))))))
+       (,rec ,@(mapcar #'cadr varlist)))))
