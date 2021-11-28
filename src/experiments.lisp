@@ -74,7 +74,19 @@
 
 (defgen test ()
   (generator-do ((x 0 (1+ x)))
-                ((>= x 5))
-                (print x)))
+                (nil)
+                x))
 
 (cc-context (test))
+
+(cc-context 
+  (generator-bind (x) (test)
+    (if (> x 5)
+        (stop nil)) 
+    (print x)))
+
+(defgen read-str (str)
+  (let ((lst nil))
+    (generator-do ((c (read-char str nil :eof) (read-char str nil :eof)))
+                  ((eql c :eof) (nreverse lst))
+                  (push c lst))))
