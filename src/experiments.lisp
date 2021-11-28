@@ -90,3 +90,14 @@
     (generator-do ((c (read-char str nil :eof) (read-char str nil :eof)))
                   ((eql c :eof) (nreverse lst))
                   (push c lst))))
+
+(defuncc some-loop (val)
+  (labels ((rec ()
+             (yield-bind (x) val
+               (if (eql x :end)
+                 (stop "Game over biatchhh" x)
+                 (rec))))) 
+    (rec)))
+
+(cc-context 
+  (some-loop 3)) 
