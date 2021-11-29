@@ -1,75 +1,68 @@
 (in-package #:cl-gen)
 
-(defuncont printy (x)
-  (progn (format t "Printy ~A~%" x) (cc x)))
+(defgen generator ()
+  (yield-bind () "Lorem"
+    (yield-bind () "Ipsum"
+      (yield-bind () "Dolor"))))
 
-(defuncont prinky (x)
-  (progn (format t "Prinky ~A~%" x) (cc x)))
+(cc-context
+  (generator-bind (g) (generator)
+    (print (next))
+    (print (next))))
 
-(defuncont prinpy (x)
-  (progn (format t "Prinpy ~A~%" x) (cc x)))
+(cc-context 
+  (let ((gen (generator)))
+    (next-bind (x) (gen)
+      (print x)
+      (next-bind (y) (gen)
+        (print y)
+        (next-bind (z) (gen)
+          (print z)
+          (print (concatenate 'string x y z))) 
+        ;; May be called again on a previous point
+        (next-bind (y) (gen)
+          (print y)
+          (next-bind (z) (gen)
+            ;; Returns last form
+            t))))))
 
+(defgen your-name ()
+  (yield-bind (first-name) ()
+    (yield-bind (second-name) ()
+      (format t "Hello, ~A ~A!~%" first-name second-name))))
 
-(defuncont bazzie (n)
-  (cc-bind (x) (progn (print $cc) (cc 3))
-    (print "evaled x")
-    (cc-bind (y) (prinky (1+ n))
-      (print "evaled y")
-      (cc-bind (z) (prinpy (1- n))
-        (print "evaled z")
-        (format t "albierto tien ~A ~A ~A garrafitas~%" x y z))
-      (cc 5))))
-
-(defuncont c ()
-  (cc-bind (x) (bazzie 5)
-    (print 'eae)
-    (print "evaled x")
-    x))
-
-(with-cc-context (c))
-
-(defuncont boris ()
-  (cc-bind (x) $cc
-    (format t "evaled x ~A~%" x)
-    (cc-bind (y) $cc
-      (format t "evaled y ~A~%" y)
-      (stop 33)
-      (cc-bind (z) $cc
-        (format t "evaled z ~A~%" z)
-        (print $cc)
-        (format t "gameover son~%")))))
-
-(with-cc-context (boris))
+(cc-context
+  (start-let ((gen (your-name)))
+    (next-bind () (gen (read-line))
+      (next-bind () (gen (read-line))))))
 
 
-(defun dft (tree)
-  (cond ((null tree) nil)
-        ((atom tree) (princ tree))
-        (t (dft (car tree))
-         (dft (cdr tree)))))
+(defgen numbers ()
+  (generator-do ((x 0 (+ 2 x)))
+                (nil)
+                x))
 
-(setq *saved* nil)
+(defgen even-numbers ()
+  (generator-bind (n) (numbers)
+    (yield-bind () n
+      (next))))
 
-(defuncont dft-node (tree)
-  (cond ((null tree) (restartx))
-        ((atom tree) (cc tree))
-        (t (push (lambda () (dft-node (cdr tree)))
-                 *saved*)
-           (dft-node (car tree)))))
+(cc-context
+  (let ((gen (even-numbers)))
+    (next-bind (x) (gen)
+      (print x)
+      (next-bind (x) (gen)
+        (print x)))))
 
-(defuncont restartx ()
-  (if *saved*
-      (funcall (pop *saved*))
-      (cc 'done)))
+(cc-context
+  (generator-bind (x) (even-numbers)
+    (print x)
+    (when (> x 5)
+      (stop "end"))))
 
-(defuncont dft2 (tree)
-  (setq *saved* nil)
-  (cc-bind (node) (dft-node tree)
-    (cond ((eq node 'done) (cc nil))
-          (t (princ node)
-           (restartx)))))
+(defuncc run-forever ()
+  (generator-loop (x) (even-numbers)
+    (print x))
 
-(setq t1 '(a (b (d h)) (c e (f i) g))
-      t2 '(1 (2 (3 6 7) 4 5)))
-
-(with-cc-context (dft2 t1))
+  #+nil
+  (cc-context (run-forever)))
