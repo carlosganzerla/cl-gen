@@ -9,7 +9,7 @@
 
 (defmacro yield-bind (bindings form &body body)
   (with-gensyms (rest)
-    `(%cc-bind (&optional ,@bindings &rest ,rest) 
+    `(%cc-bind (&optional ,@bindings &rest ,rest)
                (multiple-value-call #'values (make-generator :call $cc) ,form)
                (declare (ignore ,rest))
                ,@body)))
@@ -19,46 +19,49 @@
      (yield-bind () () ,@body)))
 
 (defmacro next-bind (var-binds (gen-binding &rest args) &body body)
-  `(multiple-value-bind (,gen-binding ,@var-binds) (funcall #'%next 
-                                                            ,gen-binding 
+  `(multiple-value-bind (,gen-binding ,@var-binds) (funcall #'%next
+                                                            ,gen-binding
                                                             ,@args)
      (declare (ignorable ,gen-binding))
      ,@body))
 
 (defmacro start-let (bindings &body body)
   `(let ,bindings
-     ,@(reduce 
+     ,@(reduce
          (lambda (e acc)
            `((next-bind () (,e)
-               ,@acc))) 
+               ,@acc)))
          (mapcar #'car bindings)
          :from-end t
          :initial-value body)))
 
 (defmacro %generator-bind ((var-binds rec-bind gen-bind) gen-form &body body)
   `(labels ((,rec-bind (,gen-bind)
-              (next-bind ,var-binds (,gen-bind ()) 
+              (next-bind ,var-binds (,gen-bind ())
                 (when ,gen-bind
                   ,@body))))
      (,rec-bind ,gen-form)))
 
 (defmacro generator-bind (var-binds gen-form &body body)
   (with-gensyms (rec-bind gen-bind)
-    `(%generator-bind (,var-binds ,rec-bind ,gen-bind) ,gen-form 
+    `(%generator-bind (,var-binds ,rec-bind ,gen-bind) ,gen-form
        (labels ((next ()
-                  (,rec-bind ,gen-bind)))
+                  (,rec-bind ,gen-bind))
+                (yield-next (&rest args)
+                  (yield-bind () (apply #'values args)
+                    (next))))
          ,@body))))
 
 (defmacro generator-loop (var-binds gen-form &body body)
   (with-gensyms (rec-bind gen-bind)
-    `(%generator-bind (,var-binds ,rec-bind ,gen-bind) 
-                      ,gen-form 
+    `(%generator-bind (,var-binds ,rec-bind ,gen-bind)
+                      ,gen-form
                       (progn ,@body (,rec-bind ,gen-bind)))))
 
-(defmacro generator-do (varlist endlist &body body)
+(defmacro do-yield (varlist endlist &body body)
   (let ((rec (gensym))
         (varlist (mapcar (lambda (var)
-                           (destructuring-bind 
+                           (destructuring-bind
                              (bind init &optional (step nil step-p)) var
                              (declare (ignore step))
                              (if step-p

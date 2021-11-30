@@ -1,4 +1,17 @@
 ;;;; package.lisp
 
 (defpackage #:cl-gen
-  (:use #:cl))
+  (:use #:cl)
+  (:export
+    #:cc-context
+    #:defuncc
+    #:stop
+    #:cc
+    #:cc-bind
+    #:yield-bind
+    #:defgen
+    #:next-bind
+    #:start-let
+    #:generator-bind
+    #:generator-loop
+    #:do-yield))

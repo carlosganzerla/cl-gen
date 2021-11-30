@@ -21,7 +21,7 @@
     `(progn
        (defmacro ,name (&rest args)
          `(,',f $cc $stop ,@args))
-       (defun ,f ($cc $stop ,@args) 
+       (defun ,f ($cc $stop ,@args)
          (declare (ignorable $cc $stop))
          ,@body))))
 
@@ -33,9 +33,9 @@
 
 (defmacro %cc-bind (bindings form declaration &body body)
   (with-gensyms (block)
-    `(let (($cc (lambda ,bindings 
+    `(let (($cc (lambda ,bindings
                   ,declaration
-                  (block ,block 
+                  (block ,block
                          (let (($stop ,(return-lambda block)))
                            (declare (ignorable $stop))
                            ,@body)))))
