@@ -1,11 +1,13 @@
-(in-package #:cl-gen)
+(defpackage #:examples
+  (:use #:cl #:cl-gen))
+(in-package #:examples)
 
 (defgen generator ()
   (yield-bind () "Lorem"
     (yield-bind () "Ipsum"
       (yield-bind () "Dolor"))))
 
-(cc-context 
+(cc-context
   (let ((gen (generator)))
     (next-bind (x) (gen)
       (print x)
@@ -13,7 +15,7 @@
         (print y)
         (next-bind (z) (gen)
           (print z)
-          (print (concatenate 'string x y z))) 
+          (print (concatenate 'string x y z)))
         ;; May be called again on a previous point
         (next-bind (y) (gen)
           (print y)

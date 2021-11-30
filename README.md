@@ -3,125 +3,46 @@
 The `cl-gen` project is a lib that intends to implement generators similar to
 Javascript
 [generators](https://javascript.plainenglish.io/javascript-lazy-evaluation-generators-examples-included-f9eaa517f969)
-in CL. Currently this project is experimental.
+in CL. To do that, a small lib of
+[continuation](https://courses.cs.washington.edu/courses/cse341/04wi/lectures/15-scheme-continuations.html)
+macros based on Paul Graham's [On Lisp]() macros presented on chapter 20, plus
+a few tweaks and fixes.
+
+## Idea
+
+Generators are special in that they may execute a block of code lazily, and
+pause the execution of the block after calling `yield`. The generator may be
+called again and the code execution will resume from the previous point.
+Generators are also very useful for creating lazy sequence (like
+`IEnumerable`/`Seq` in .NET). In Common Lisp, since there's no (AFAIK) built-in
+function to access the whole call stack, implementing generators is rather
+tricky. Continuations make this possible. Since they are not built-in in CL as
+they are in Scheme, I created a small lib based on PG's book, updated to fix
+some stuff that may cause trouble. The generator macros were based on the
+continuation macros to allow pause/resuming of execution and provide a similar
+experience.
 
 ## Usage
 
-**It's possible that this doc is outdated because this is an early stage
-project. I suggest that you look into it just to get the idea. If you want
-better documentation, see the [examples file](src/examples.lisp). Proper
-documentation and tests will be done some time**
+For continuations, we have:
 
-The idea of generators is basically (although not limited to) to create lazy
-sequences (like `IEnumerable`/`Seq` in .NET). To do that there are basically
-three building blocks: The `yield`, `next` and `stop` functions. The
-`generator-bind` and `generator-collect` macros were devised for convenience of
-usage.
+For generators, we have:
 
-The `yield` function is a copy of Javascript `yield`. It yields back the
-control to the caller (no pun intended). The `generator-bind` macro creates a
-context for binding variables to generator yielded values, and to establish a
-generator context. The `stop` function will terminate the generator context,
-returning the supplied value. The `next` function, on the other hand, will skip
-the current iteration, and will supply a value to the return value of `yield`.
 
-Let's see an example:
-
-```lisp
-(defun numbers ()
-  (do ((x 0 (1+ x)))
-      (nil)
-      (yield x)))
-
-(generator-bind (x) ((numbers))
-  (format t "Yielded ~A~%" x)
-  (when (= 100 x)
-    (stop 'stahp)))
-```
-
-Contrary to JS, which callers ask for values, in this implementation callers
-retrieve values until `stop` is called.
-
-The results would be like:
-
-```lisp
-Yielded 0
-Yielded 1
-...
-Yielded 100
-STAHP
-```
-
-Generators can be nested also:
-
-```lisp
-(defun even-numbers ()
-  (generator-bind (x) ((numbers))
-    (when (evenp x)
-      (yield x))))
-
-(generator-bind (x) ((even-numbers))
-    (print x)
-    (stop-when (>= x 100) 'ok))
-```
-
-```lisp
-0
-2
-4
-...
-100
-```
-
-In this case, we created an new generator `even-numbers` which consumes from
-`numbers`. The last block consumes from the former, printing only even numbers.
-
-An iteration must be skipped explicitly. Also, the results of an iteration
-may be collected automatically (unless the iteration is skipped):
-
-```lisp
-(defun tree-generator (tree)
-  (mapcar (lambda (x)
-            (if (consp x)
-                (tree-generator x)
-                (yield x)))
-          tree))
-
-(defun find-tree (pred tree)
-  (generator-collect (e) (tree-generator tree)
-    (if (funcall pred e)
-        e
-        (next))))
-```
-
-```lisp
-CL-USER> (find-tree #'evenp '(1 2 3 (5 4 0 3 (1 2) (1 (4 5) 2 9) 6) (1 3 2)))
-(2 4 0 2 4 2 6 2)
-```
-
-Here the `next` function will skip the current iteration. The
-`generator-collect` macro will collect all completed iteration results on a
-list and return it on the last iteration.
-
-Check [the examples file](src/examples.lisp) for more examples. Currently no
-unit tests exist.
 
 ## Next steps
 
-Recently I've been trying to make the `yield` and `next` function exactly like
-Javascript. It turns out this is kinda hard to do on Common Lisp. If this was
-Scheme I could use continuations. In CL, continuations are possible using some
-macros, but I didn't find it very convenient as it is in Scheme, so I decided
-to leave it and instead improve the current functionality. Instead of asking
-for values, the calling code may stop the iteration completely or just skip to
-the next value. If the iteration is skipped, the user may supply the value that
-will be returned in the `yield` function (this one is very similar to Js).
+Previously, this lib implemented a version that didn't have the pause
+functionality. It provided a nice API to decouple functions, but didn't
+introduce nothing relevant and all it did was some boilerplate reduction since
+everything it did could be done by simple functional programming without much
+fuss (see the [`old`]() branch). I resisted to use continuations for some time
+but basically the functionality can't be reproduced without it.
 
-I think the next move would be create some robust examples (a more complex
-program) to check the viability. If it seems good, I'll add proper tests and
-documentation. The generator binds themselves should not slow by default
-because they simply are lambda calls on the same lexical scope (no stack
-unwinding required). Proper profiling will be done if the viability condition
-is satisfied.
+The next logical step would be to improve the API. For that it depends really
+on the use cases. The core macros may be paired with recursive functions that
+don't fit in the existing iteration macros and new abstractions may arise from
+this. I'll be trying to use this lib for other stuff and adding new features
+along the way should they be generic enough.
 
 Feel free to open PRs, issues or contact me.

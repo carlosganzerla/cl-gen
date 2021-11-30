@@ -14,4 +14,6 @@
     #:start-let
     #:generator-bind
     #:generator-loop
-    #:do-yield))
+    #:do-yield
+    #:next
+    #:yield-next))

@@ -1,4 +1,6 @@
-(in-package #:cl-gen)
+(defpackage #:sequences
+  (:use #:cl #:cl-gen))
+(in-package #:sequences)
 
 (defgen generate-seq (&key (init 0) (end nil) (step 1))
   (do-yield ((x init (+ x step)))
