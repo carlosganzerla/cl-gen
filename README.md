@@ -258,7 +258,8 @@ Previously, this lib implementation didn't have the pause functionality. It
 provided a nice API to decouple functions, but didn't introduce nothing
 relevant and all it did was some boilerplate reduction since everything it did
 could be done by simple functional programming without much fuss (see the
-[`old`]() branch). I resisted to use continuations for some time but basically
+[`old`](https://github.com/carlosganzerla/cl-gen/tree/old) branch).
+I resisted to use continuations for some time but basically
 the functionality can't be reproduced without it AFAIK.
 
 The next step IMO would be to improve the API. The direcitons for it depends
