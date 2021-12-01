@@ -47,7 +47,7 @@
     `(%generator-bind (,var-binds ,rec-bind ,gen-bind) ,gen-form
        (labels ((next ()
                   (,rec-bind ,gen-bind))
-                (yield-next (&rest args)
+                (yield (&rest args)
                   (yield-bind () (apply #'values args)
                     (next))))
          ,@body))))

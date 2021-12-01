@@ -53,6 +53,15 @@
       (next-bind (y) (gen)
         (print y)
         (next-bind (z) (gen)
+          (print z))))))
+
+(cc-context
+  (let ((gen (generator)))
+    (next-bind (x) (gen)
+      (print x)
+      (next-bind (y) (gen)
+        (print y)
+        (next-bind (z) (gen)
           (print z)
           (print (concatenate 'string x y z)))
         ;; May be called again on a previous point

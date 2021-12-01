@@ -16,4 +16,4 @@
     #:generator-loop
     #:do-yield
     #:next
-    #:yield-next))
+    #:yield))
