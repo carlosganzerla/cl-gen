@@ -2,5 +2,18 @@
 
 (defpackage #:cl-gen
   (:use #:cl)
-  (:export #:yield #:stop #:stop-when #:stop-unless #:generator-bind #:next
-           #:generator-collect))
+  (:export
+    #:cc-context
+    #:defuncc
+    #:stop
+    #:cc
+    #:cc-bind
+    #:yield-bind
+    #:defgen
+    #:next-bind
+    #:start-let
+    #:generator-bind
+    #:generator-loop
+    #:do-yield
+    #:next
+    #:yield))
