@@ -22,7 +22,7 @@
       (print cl-gen::$cc)
       (print-cc x y z))))
 
-(cc-context 
+(cc-context
   (let ((f (execute-later)))
     (funcall f 30)))
 
@@ -34,7 +34,7 @@
                (rec (1+ x)))))
     (rec 0)))
 
-(cc-context 
+(cc-context
   (do ((x 0 (1+ x))
        (f (lazy-loop) (funcall f (random 15))))
       ((= 100 x))))
