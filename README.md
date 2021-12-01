@@ -13,19 +13,19 @@ macros presented on chapter 20, plus a few tweaks and fixes.
 Generators are special in that they may execute a block of code lazily, and
 pause the execution of the block after calling `yield`. The generator may be
 called again and the code execution will resume from the previous point.
-Generators are also very useful for creating lazy sequence (like
+Generators are also very useful for creating lazy sequences (like
 `IEnumerable`/`Seq` in .NET). In Common Lisp, since there's no (AFAIK) built-in
 function to access the whole call stack, implementing generators is rather
 tricky. Continuations make this possible. Since they are not built-in in CL as
 they are in Scheme, I created a small lib based on PG's book, updated to fix
 some stuff that may cause trouble. The generator macros were based on the
 continuation macros to allow pause/resuming of execution and provide a similar
-experience.
+experience to JS.
 
 ## Usage
 
 It's not essential to understand continuations to use this lib. Since their
-implementation is only a mean to an end, I'll let the source document itself.
+implementation is only a means to an end, I'll let the source document itself.
 There's this
 [article](https://ashok-khanna.medium.com/continuations-in-common-lisp-1911cb413a03)
 that walks through the macros presented on PG's book. A particular difference
@@ -151,7 +151,7 @@ file](src/examples.lisp).
 
 ### Iteration
 
-Commonly generators are using on iteration and sequence generation. For a more
+Commonly, generators are used on iteration and sequence generation. For a more
 realistic and common usage, some utility macros were designed:
 `generator-bind`, `generator-loop` and `do-yield`.
 
@@ -246,26 +246,26 @@ or consumption must be tail recursive in general. For a small number of
 possible iterations it won't really matter, but this scenario isn't really
 applicable to generators that are used to simulate infinite sequences.
 
-The third of course is some additional capabilities of JS generators as
+The third is the absence of some additional capabilities of JS generators as
 unwindings and throwing exceptions from the outside. I didn't try to implement
-these, they may well be feasible. The current objective is to implement a
-minimal and functional interface with a easy (or at least not very hard to) use
+these, but they may be feasible. The current objective is to implement a
+minimal and functional interface with an easy (or at least not very hard) to use
 API.
 
 ## Next steps
 
-Previously, this lib implemented a version that didn't have the pause
-functionality. It provided a nice API to decouple functions, but didn't
-introduce nothing relevant and all it did was some boilerplate reduction since
-everything it did could be done by simple functional programming without much
-fuss (see the [`old`]() branch). I resisted to use continuations for some time
-but basically the functionality can't be reproduced without it AFAIK.
+Previously, this lib implementation didn't have the pause functionality. It
+provided a nice API to decouple functions, but didn't introduce nothing
+relevant and all it did was some boilerplate reduction since everything it did
+could be done by simple functional programming without much fuss (see the
+[`old`]() branch). I resisted to use continuations for some time but basically
+the functionality can't be reproduced without it AFAIK.
 
-The next logical step would be to improve the API. For that it depends really
-on the use cases. The core macros may be paired with recursive functions that
-don't fit in the existing iteration macros and new abstractions may arise from
-this. I'll be trying to use this lib for other stuff and adding new features
-along the way should they be generic enough.
+The next step IMO would be to improve the API. The direcitons for it depends
+really on the use cases. The core macros may be paired with recursive functions
+that don't fit in the existing iteration macros and new abstractions may arise
+from this. I'll be trying to use this lib for other stuff and adding new
+features along the way should they be generic enough.
 
 I'll add tests and docstrings soon.
 
