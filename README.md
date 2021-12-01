@@ -5,8 +5,8 @@ Javascript
 [generators](https://javascript.plainenglish.io/javascript-lazy-evaluation-generators-examples-included-f9eaa517f969)
 in CL. To do that, a small lib of
 [continuation](https://courses.cs.washington.edu/courses/cse341/04wi/lectures/15-scheme-continuations.html)
-macros based on Paul Graham's [On Lisp]() macros presented on chapter 20, plus
-a few tweaks and fixes.
+macros based on Paul Graham's [On Lisp](http://www.paulgraham.com/onlisp.html)
+macros presented on chapter 20, plus a few tweaks and fixes.
 
 ## Idea
 
@@ -24,11 +24,104 @@ experience.
 
 ## Usage
 
-For continuations, we have:
+It's not essential to understand continuations to use this lib. Since their
+implementation is only a mean to an end, I'll let the source document itself.
+There's this
+[article](https://ashok-khanna.medium.com/continuations-in-common-lisp-1911cb413a03)
+that walks through the macros presented on PG's book. A particular difference
+is that the continuations implemented here use exclusively a well defined
+lexical context, so every code that uses continuation must be called within a
+`cc-context` macro. Just put it on the main function and the macros will do the
+rest.
 
-For generators, we have:
+On generators we have two core macros: `yield-bind` and `next-bind`. They are
+parallel to `yield` and `next` on JS respectively. Using continuations we may
+also establish the bindings for the values that `yield` and `next` would
+receive. `yield-bind` basically evaluates and yields the result of a form. It
+returns a `generator` structure that contains the next function call (the
+body after the `yield`). The `defgen` is a `defuncc` (`defun` with
+continuations enabled) with a top `yield-bind` to
+simulate the lazy behavior of `function*`. For example if we define the
+following generator and call it:
 
+```lisp
+(defgen generator ()
+  (yield-bind () "Lorem"
+    (yield-bind () "Ipsum"
+      (yield-bind () "Dolor"))))
+```
 
+```shell
+EXAMPLES> (cc-context (generator))
+#S(CL-GEN::GENERATOR
+   :CALL #<FUNCTION (LAMBDA (&OPTIONAL &REST #:G0) :IN %GENERATOR) {5361A13B}>)
+NIL
+CL-USER>
+```
+
+We can see that two values were returned. The first value is always the
+generator structure. The other values are the rest of the values returned from
+the function body. Suppose we cheat and call the internal function `%next`
+directly:
+
+```shell
+EXAMPLES> (cl-gen::%next *)
+#S(CL-GEN::GENERATOR
+   :CALL #<FUNCTION (LAMBDA (&OPTIONAL &REST #:G2)
+                      :IN
+                      EXAMPLES::%GENERATOR) {5361A19B}>)
+"Lorem"
+EXAMPLES> 
+```
+
+The first yielded value was returned (just as we've called the first `next`) on
+JS. The first value again is a generator structure, but this time with the call
+corresponding to the next `yield-bind`. Generator structures are immutable and
+do not exhaust like in JS.
+
+The `*` means the last returned value on my REPL (I use SLIMV).
+
+If we repeat the process thrice:
+
+```shell
+EXAMPLES> (cl-gen::%next *)
+#S(CL-GEN::GENERATOR
+   :CALL #<FUNCTION (LAMBDA (&OPTIONAL &REST #:G4) :IN %GENERATOR) {5361A1FB}>)
+"Ipsum"
+EXAMPLES> (cl-gen::%next *)
+#S(CL-GEN::GENERATOR
+   :CALL #<FUNCTION (LAMBDA (&OPTIONAL &REST #:G6) :IN %GENERATOR) {5361A25B}>)
+"Dolor"
+EXAMPLES> (cl-gen::%next *)
+NIL
+```
+
+When there are no more calls a single `NIL` is returned.
+
+We can see that we have the equivalent as this:
+
+```javascript
+function* generator() {
+  yield "Lorem";
+  yield "Ipsum";
+  yield "Amet";
+}
+
+const gen = generator();
+console.log(gen.next());
+console.log(gen.next());
+console.log(gen.next());
+console.log(gen.next());
+```
+
+And the result is somewhat similar:
+
+```javascript
+{ value: 'Lorem', done: false }
+{ value: 'Ipsum', done: false }
+{ value: 'Amet', done: false }
+{ value: undefined, done: true }
+```
 
 ## Next steps
 
