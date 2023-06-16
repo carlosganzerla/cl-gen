@@ -3,6 +3,7 @@
 (defstruct generator (call nil :type function))
 
 (defun %next (gen &rest args)
+  (print gen)
   (when (generator-p gen)
     (with-slots (call) gen
       (apply call args))))

@@ -44,3 +44,5 @@
 
 (defmacro cc-bind (bindings form &body body)
   `(%cc-bind ,bindings ,form nil ,@body))
+
+(multi-id 5)
